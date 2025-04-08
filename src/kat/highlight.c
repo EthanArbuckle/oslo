@@ -754,7 +754,6 @@ int str2int(int *out, char *s)
     *out = (int)l;
     return (0);
 }
-
 /**
  * Initialize the syntax highlight engine.
  *
@@ -773,19 +772,18 @@ int highlight_init(const char *theme_file)
     size_t kw_size; /* Keyword size.         */
     long file_size; /* Theme file size.      */
     
-    kw_size = sizeof(keywords_list)/sizeof(struct keyword);
+    kw_size = sizeof(keywords_list) / sizeof(struct keyword);
     
     /* Configure themes. */
     if (theme_file != NULL)
     {
-        char *p;  /* strtok pointer. */
+        char *p;
         idx = 0;
         
         fp = fopen(theme_file, "r");
         if (fp == NULL)
         {
-            fprintf(stderr, "highlight: cannot open the theme file %s, is it"
-                    " really exists?\n", theme_file);
+            fprintf(stderr, "highlight: cannot open the theme file %s, does it really exists?\n", theme_file);
             return (-1);
         }
         
@@ -795,12 +793,10 @@ int highlight_init(const char *theme_file)
         fseek(fp, 0, SEEK_SET);
         
         /* Allocate and read the file. */
-        file = malloc(sizeof(char) * (file_size+1));
+        file = malloc(sizeof(char) * (file_size + 1));
         if (fread(file, file_size, 1, fp) != 1)
         {
-            fprintf(stderr, "highlight: an error has ocurred while"
-                    " trying to read %s!\n", theme_file);
-            
+            fprintf(stderr, "highlight: an error has occurred while trying to read %s!\n", theme_file);
             free(file);
             fclose(fp);
             return (-1);
@@ -809,16 +805,16 @@ int highlight_init(const char *theme_file)
         file[file_size] = '\0';
         p = file;
         
-        /* Parse each number. */
-        for (str_num = strtok(p, ", \t\n"); str_num != NULL && idx < 8;
-             str_num = strtok(NULL, ", \t\n"), idx++ )
+        /* Parse each number using strtok_r. */
+        char *saveptr;
+        for (str_num = strtok_r(p, ", \t\n", &saveptr); str_num != NULL && idx < 8;
+             str_num = strtok_r(NULL, ", \t\n", &saveptr), idx++)
         {
             char *color;
             
             if (str2int(&num, str_num) < 0 || num < 0 || num > 255)
             {
-                fprintf(stderr, "highlight: cannot proceed, invalid"
-                        " number: %s, valid numbers must be between 0-255\n", str_num);
+                fprintf(stderr, "highlight: cannot proceed, invalid number: %s, valid numbers must be between 0-255\n", str_num);
                 break;
             }
             
@@ -835,8 +831,8 @@ int highlight_init(const char *theme_file)
             sprintf(color, "\033[38;5;%dm", num);
             
             /* Copy to the list. */
-            HL_COLORS[CURRENT_THEME+idx] = color;
-            LENGTHS[CURRENT_THEME+idx] = (int)strlen(color);
+            HL_COLORS[CURRENT_THEME + idx] = color;
+            LENGTHS[CURRENT_THEME + idx] = (int)strlen(color);
         }
         
         /* If something goes wrong. */
@@ -844,11 +840,10 @@ int highlight_init(const char *theme_file)
         {
             /* Deallocate previously configured pointers. */
             for (int i = 0; i < idx; i++)
-                free(HL_COLORS[CURRENT_THEME+i]);
+                free(HL_COLORS[CURRENT_THEME + i]);
             
             fprintf(stderr, "highlight: wrong theme, maybe a wrong number of colors? (%d/8)\n"
-                    "           colors should be exactly 8 and between 0-255!\n", idx);
-            
+                            "           colors should be exactly 8 and between 0-255!\n", idx);
             free(file);
             fclose(fp);
             return (-1);
@@ -862,8 +857,7 @@ int highlight_init(const char *theme_file)
     hashtable_init(&ht_keywords, hashtable_sdbm_setup);
     
     for (size_t i = 0; i < kw_size; i++)
-        hashtable_add(&ht_keywords, keywords_list[i].keyword,
-                      &keywords_list[i]);
+        hashtable_add(&ht_keywords, keywords_list[i].keyword, &keywords_list[i]);
     
     return (0);
 }
