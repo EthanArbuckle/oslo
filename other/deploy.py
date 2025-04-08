@@ -6,6 +6,8 @@ from pathlib import Path
 
 DEVICE_SSH_PORT = "2222"
 DEVICE_SSH_IP = "localhost"
+SSH_KEY_CHECKING = "-oStricthostkeychecking=no"
+SSH_KNOWN_HOSTS = "-oUserknownhostsfile=/dev/null"
 
 
 class CodeSignError(Exception):
@@ -39,8 +41,8 @@ def determine_jb_root_prefix() -> Path:
     try:
         command = [
             "ssh",
-            "-oStricthostkeychecking=no",
-            "-oUserknownhostsfile=/dev/null",
+            SSH_KEY_CHECKING,
+            SSH_KNOWN_HOSTS,
             "-p",
             DEVICE_SSH_PORT,
             f"root@{DEVICE_SSH_IP}",
@@ -80,8 +82,8 @@ BINARY_DEPLOY_INFO = {
 def run_command_on_device(command: str) -> bytes:
     ssh_args = [
         "ssh",
-        "-oStricthostkeychecking=no",
-        "-oUserknownhostsfile=/dev/null",
+        SSH_KEY_CHECKING,
+        SSH_KNOWN_HOSTS,
         "-p",
         DEVICE_SSH_PORT,
         f"root@{DEVICE_SSH_IP}",
@@ -93,8 +95,8 @@ def run_command_on_device(command: str) -> bytes:
 def copy_file_to_device(local: Path, remote: Path) -> None:
     scp_args = [
         "scp",
-        "-oStricthostkeychecking=no",
-        "-oUserknownhostsfile=/dev/null",
+        SSH_KEY_CHECKING,
+        SSH_KNOWN_HOSTS,
         "-P",
         DEVICE_SSH_PORT,
         local.as_posix(),
@@ -161,7 +163,7 @@ def deploy_to_device(local_path: Path, binary_deploy_info: BinaryInstallInformat
 
 
 if __name__ == "__main__":
-    logger.info("deploying binaries device")
+    logger.info("Deploying binaries to device")
 
     if "BUILT_PRODUCTS_DIR" not in os.environ:
         raise BinaryNotFoundError("BUILT_PRODUCTS_DIR var not found in environment")
