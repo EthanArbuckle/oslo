@@ -38,7 +38,7 @@
         }
     }
     // Date and time: 2025-01-23 12:34:56
-    else if ([offset componentsSeparatedByString:@"-"].count == 3 && [offset componentsSeparatedByString:@"-"].count == 3) {
+    else if ([offset containsString:@" "] && [offset componentsSeparatedByString:@"-"].count == 3) {
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         formatter.dateFormat = @"yyyy-MM-dd HH:mm:ss";
         return [formatter dateFromString:offset];
@@ -123,6 +123,7 @@
                     printf("Invalid time offset: %s\n", after.UTF8String);
                     exit(1);
                 }
+                config.options.live = NO;
                 config.filter.after = date;
                 break;
             }
@@ -133,6 +134,7 @@
                     printf("Invalid time offset: %s\n", before.UTF8String);
                     exit(1);
                 }
+                config.options.live = NO;
                 config.filter.before = date;
                 break;
             }
@@ -168,6 +170,7 @@
                 break;
             case 'S':
                 config.options.stripNewlines = YES;
+                break;
             case 'h':
                 [self printUsage];
                 exit(0);
@@ -207,7 +210,7 @@
 + (void)printUsage {
     printf("Usage: oslo [process] [filters] [options]\n\n");
     printf("Process:\n");
-    printf("  <name>         Process name (case insensitive substring match))\n");
+    printf("  <name>         Process name (case insensitive substring match)\n");
     printf("  <pid>          Process ID\n");
     printf("                 (shows all processes if omitted)\n\n");
     printf("Filters:\n");
@@ -219,15 +222,13 @@
     printf("                   Both: 2025-01-23 12:34:56\n");
     printf("  -b, --before   Same time formats as --after\n");
     printf("  -c, --contains Include messages containing text (case insensitive)\n");
-    printf("  -e, --exclude  Exclude messages containing text (case insensitive)\n");
-    printf("  -i, --image    Filter by process or image path\n\n");
+    printf("  -x or -e, --exclude  Exclude messages containing text (case insensitive)\n");
+    printf("  -l or -i, --library    Filter by library path\n\n");
     printf("Options:\n");
-    printf("  -l, --live     Live logs (default)\n");
-    printf("  -s, --stored   Stored logs\n");
-    printf("  -g, --group    Group by process\n");
-    printf("  -j, --json     JSON output\n");
-    printf("  -f, --file     Write to file\n");
-    printf("  -r, --repeats  Drop repeated messages (default: show all)\n");
+    printf("  -g, --group    Group by process _(only for past logs)_\n");
+    printf("  -j, --json     Output in JSON format _(only for past logs)\n");
+    printf("  -f, --file     Write output to a file\n");
+    printf("  -r, --repeats  Collapse repeated identical messages (default: disabled)\n");
     printf("  -N, --no-color Disable color output\n");
     printf("  -S, --strip    Strip newlines from output\n");
     printf("  -h, --help     Show this help message\n");
@@ -236,7 +237,6 @@
 - (NSPredicate *)buildPredicate {
     NSMutableArray *subpredicates = [NSMutableArray array];
     
-    // Handle stuff like 'sPr*N*d' == SpringBoard
     NSString *(^wrapInputForFuzzyMatch)(NSString *) = ^NSString *(NSString *input) {
         NSString *wrapped = [input stringByReplacingOccurrencesOfString:@"*" withString:@"[^/]*"];
         if (![wrapped hasPrefix:@".*"]) {
