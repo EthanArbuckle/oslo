@@ -51,6 +51,11 @@
     }
     // Time only: 12:34:56
     else if ([offset componentsSeparatedByString:@":"].count == 2) {
+        // Assume they're going for HH:mm:00
+        offset = [offset stringByAppendingString:@":00"];
+    }
+    
+    if ([offset componentsSeparatedByString:@":"].count == 3) {
         NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
         formatter.dateFormat = @"HH:mm:ss";
         return [formatter dateFromString:offset];
@@ -75,7 +80,8 @@
         {"before", required_argument, 0, 'b'},
         {"contains", required_argument, 0, 'c'},
         {"exclude", required_argument, 0, 'e'},
-        {"live", no_argument, 0, 'l'},
+        {"image", required_argument, 0, 'i'},
+        {"library", required_argument, 0, 'l'},
         {"stored", no_argument, 0, 's'},
         {"group", no_argument, 0, 'g'},
         {"json", no_argument, 0, 'j'},
@@ -83,7 +89,6 @@
         {"repeats", no_argument, 0, 'r'},
         {"no-color", no_argument, 0, 'N'},
         {"strip", no_argument, 0, 'S'},
-        {"image", required_argument, 0, 'i'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
@@ -91,7 +96,7 @@
     int opt;
     int option_index = 0;
     
-    while ((opt = getopt_long(argc, argv, "L:a:b:c:e:lsgjrNSf:i:h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "L:a:b:c:e:l:sgjrNSf:i:h", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'L': {
                 NSString *level = [NSString stringWithUTF8String:optarg];
@@ -144,11 +149,9 @@
             case 'e':
                 [(NSMutableArray *)config.filter.excludePatterns addObject:[NSString stringWithUTF8String:optarg]];
                 break;
+            case 'l':
             case 'i':
                 config.filter.imagePath = [NSString stringWithUTF8String:optarg];
-                break;
-            case 'l':
-                config.options.live = YES;
                 break;
             case 's':
                 config.options.live = NO;
@@ -191,11 +194,13 @@
     
     if (optind < argc) {
         NSString *processArg = [NSString stringWithUTF8String:argv[optind]];
-        if ([processArg rangeOfCharacterFromSet:[NSCharacterSet decimalDigitCharacterSet]].length == processArg.length) {
-            config.filter.pid = [processArg intValue];
+        NSScanner *scanner = [NSScanner scannerWithString:processArg];
+        int pid = 0;
+        if ([scanner scanInt:&pid] && scanner.isAtEnd) {
+            config.filter.pid = pid;
         }
         else {
-            config.filter.processPattern = [processArg lowercaseString];
+            config.filter.processPattern = processArg;
         }
     }
     
